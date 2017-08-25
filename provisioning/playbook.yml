@@ -1,0 +1,118 @@
+---
+- hosts: all
+  sudo: yes
+
+  vars:
+     - jdk_version:      1.8.0_65
+     - jdk_tarball_file: jdk-8u65-linux-x64
+     - jdk_tarball_url:  http://download.oracle.com/otn-pub/java/jdk/8u65-b17/jdk-8u65-linux-x64
+
+     - go_url: https://storage.googleapis.com/golang
+     - go_filename: go1.8.1.linux-amd64.tar.gz
+
+     - gradle_url: https://services.gradle.org/distributions
+     - gradle_filename: gradle-2.9-all.zip
+  
+     - consul_config:
+          filename: consul_0.5.2_linux_amd64.zip
+          url: https://releases.hashicorp.com/consul/0.5.2/
+
+     - ethereum_wallet_filename: Ethereum-Wallet-linux64-0-9-0.deb
+     - ethereum_wallet_url: https://github.com/ethereum/mist/releases/download/v0.9.0/
+     
+     - ethereum_mist_filename: Mist-linux64-0-9-0.deb
+     - ethereum_mist_url: https://github.com/ethereum/mist/releases/download/v0.9.0/
+
+     - google_chrome_filename: google-chrome-stable_current_amd64.deb
+     - google_chrome_url: https://dl.google.com/linux/direct/     
+
+  tasks:
+
+# Base config
+   - name: update apt data
+     apt: update_cache=yes
+
+   - name: Install list of packages
+     apt: name={{item}} state=present
+     with_items:
+     - unzip
+     - curl
+     - emacs24
+     - npm
+     - libxss1
+     - libappindicator1
+     - libindicator7
+     - ubuntu-gnome-desktop
+
+# Etherium install
+   - apt_repository:
+       repo: 'ppa:ethereum/ethereum'
+       state: present
+
+   - name: Install list of packages
+     apt: name={{item}} state=present update_cache=yes
+     with_items:
+     - ethereum  
+     - solc
+
+#   go
+   - name: make Go home
+     file: path="/usr/go" state="directory" owner="root" group="root" mode="u=rwx,go=rx"
+
+   - name: rerieve Go
+     get_url: url={{ go_url }}/{{ go_filename }} dest=.
+
+   - name: install Go
+     unarchive: src="/home/vagrant/{{ go_filename }}" dest="/usr/go" owner="root" group="root" mode="go-w" copy="no"
+
+   - name: link /usr/bin/g0
+     file: dest="/usr/bin/go" src="/usr/go/go/bin/go"  state=link owner="root" group="root" mode="go-w"
+
+   - name : update bashrc
+     lineinfile: dest=/home/vagrant/.bashrc line="export GO_HOME=/usr/bin/go/go"
+   - name : update bashrc
+     lineinfile: dest=/home/vagrant/.bashrc line="export GO_PATH=/vagrant/src/main"     
+
+   - name: rerieve Wallet
+     get_url: url={{ ethereum_wallet_url }}{{ ethereum_wallet_filename }} dest=.
+
+   - name: rerieve Mist
+     get_url: url={{ ethereum_mist_url }}{{ ethereum_mist_filename }} dest=.
+
+   - name: rerieve Chrome
+     get_url: url={{ google_chrome_url }}{{ google_chrome_filename }} dest=.
+
+   - name: install Chrome
+     apt: deb="{{ google_chrome_filename}}"
+     sudo: true
+   
+   - name : install wallet
+     apt: deb="{{ ethereum_wallet_filename }}"
+     sudo: true
+
+   - name : install mist
+     apt: deb="{{ ethereum_mist_filename }}"
+     sudo: true
+
+   - name: Clean path
+     file: state="absent" path="/home/vagrant/{{ go_filename }}"
+   
+   - name: Clean path
+     file: state="absent" path="/home/vagrant/{{ ethereum_wallet_filename }}"
+   
+   - name: Clean path
+     file: state="absent" path="/home/vagrant/{{ ethereum_mist_filename }}"
+   
+   - name: Clean path
+     file: state="absent" path="/home/vagrant/{{ google_chrome_filename }}"
+    
+   - name: Create local Ethereum data directories
+     file: path=./ethereum_local/chaindata state=directory
+     owner: vagrant
+     group: vagrant
+
+   - name : update profile
+     lineinfile: dest=/home/vagrant/.bashrc line="alias localgeth='geth --datadir=$HOME/ethereum_local/chaindata'"
+
+   - name: Init local chain data
+     command: geth --datadir=$HOME/ethereum_local/chaindata init /vagrant/lib/genesis.json
