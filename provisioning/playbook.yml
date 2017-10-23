@@ -107,12 +107,16 @@
      file: state="absent" path="/home/vagrant/{{ google_chrome_filename }}"
     
    - name: Create local Ethereum data directories
-     file: path=./ethereum_local/chaindata state=directory
-     owner: vagrant
-     group: vagrant
+     file: path=./ethereum_local/chaindata state=directory owner=vagrant group=vagrant
 
    - name : update profile
-     lineinfile: dest=/home/vagrant/.bashrc line="alias localgeth='geth --datadir=$HOME/ethereum_local/chaindata'"
+     lineinfile: dest=/home/vagrant/.bashrc line="alias localgeth='geth --datadir=$HOME/ethereum_local/chaindata --rpc'"
+
+   - name : update profile
+     lineinfile: dest=/home/vagrant/.bashrc line="alias localmist='mist --rpc ~/ethereum_local/chaindata/geth.ipc'"
+
 
    - name: Init local chain data
-     command: geth --datadir=$HOME/ethereum_local/chaindata init /vagrant/lib/genesis.json
+     command: "geth --datadir=ethereum_local/chaindata init /vagrant/lib/genesis.json"
+     become: true
+     become_user: vagrant

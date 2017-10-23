@@ -9,7 +9,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "ubuntu/trusty64"
   config.vm.box_url = "https://vagrantcloud.com/ubuntu/trusty64"
   config.vm.provider "virtualbox" do |vb|
-        vb.memory = "2048" 
+        vb.memory = "8024" 
   end
   config.ssh.forward_x11 = true
   config.vm.network "forwarded_port", guest: 8545, host: 8545    
